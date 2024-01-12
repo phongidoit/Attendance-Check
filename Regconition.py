@@ -2,7 +2,7 @@ import json
 import torch
 from torch.nn import CosineSimilarity
 
-class Recognition():
+class Recognition:
 	def __init__(self):
 		self.score_fn = CosineSimilarity(dim=0, eps = 1e-5)
 		#self.
@@ -21,8 +21,11 @@ class Recognition():
 		conf_score = score[match]
 		if conf_score<0.6:
 			#label unknow
+			return []
 			pass
 		else:
 			#top 5 highest score
 			top_5_id = score.argsort()[-5:][::-1]
+			return top_5_id
+
 
