@@ -23,7 +23,7 @@ Builder.load_string('''
         Label:
             height: 20
             size_hint_y: None
-            text: 'Testing the camera'
+            text: 'Attendance Check'
 
         KivyCamera:
             id: qrcam
@@ -35,16 +35,18 @@ Builder.load_string('''
 
             Button:
                 id: butt_start
-                size_hint: 0.5,2
-                text: "start"
+                size_hint: 0.5,1.5
+                text: "Start"
                 on_press: root.dostart()
 
             Button:
                 id: butt_exit
-                text: "quit"
-                size_hint: 0.5,2
-                on_press: root.doexit()
+                text: "Register"
+                size_hint: 0.5,1.5
+                on_press: root.capture()
 ''')
+
+model = CreateEmbedVector.Model()
 
 class KivyCamera(Image):
 
@@ -69,6 +71,10 @@ class KivyCamera(Image):
             w, h = frame.shape[1], frame.shape[0]
             box, _, e = self.model.detect(frame,False,down_sample=8)
             print(box, e)
+            if box != None:
+                #draw Bouding box
+                cv2.rectangle(frame,(box[0], box[1]), (box[2], box[3]), color=(0,255,0))
+                #pass
 
             if not texture or texture.width != w or texture.height != h:
                 self.texture = texture = Texture.create(size=(w, h))
@@ -97,12 +103,19 @@ class QrtestHome(BoxLayout):
             capture = None
         EventLoop.close()
 
+    def capture(self):
+        camera = self.ids['qrcam']
+        im = camera.export_as_image()
+        im.save("test.png")
+        #_,
+        pass
+
 
 class qrtestApp(App):
 
     def build(self):
         Window.clearcolor = (.4,.4,.4,1)
-        Window.size = (400, 300)
+        Window.size = (400, 500)
         homeWin = QrtestHome()
         homeWin.init_qrtest()
         return homeWin
