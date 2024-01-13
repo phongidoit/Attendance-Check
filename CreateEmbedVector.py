@@ -47,17 +47,19 @@ class Model:
 				cv2.imwrite("test1.png", np.flip(detect_im, axis=-1))
 
 			#convert to PIL for easy to handle
-			#detect_im = PIL.Image.fromarrray()
+			#detect_im = PIL.Image.fromarray(detect_im.astype('uint8'), 'RGB')
 			return ori_box, detect_im, None
 		except Exception as e:
 			return None, None, e
 
 
 	def create_vector(self, img):
+		self.CNN.eval()
 		embed_vector = self.CNN(self.preprocessing(img).unsqueeze(0).to(self.device))[0]
 		return embed_vector
 
-	def save_embed_vector(self, vector, name="Test name", save_path = './Embed_vector.json'):
+	def save_embed_vector(self, vector, id, name="Test name", save_path = './Embed_vector.json'):
+		#Expect id to be string, example: "0001"
 		f= open(save_path)
 		file = json.loads(f)
 		n_line = len(f.readlines())
@@ -68,10 +70,10 @@ class Model:
 				f = open(save_path)
 				continue
 			except:
-				vector_list = vector.tolist()
-				dic = {"id":id, "name":name, "vector":vector_list}
+				dic = {"id":id, "name":name}
 				file.update(dic)
 				json.dumps(file, f)
+				torch.save(vector, id+name)
 				break
 
 		f.close()

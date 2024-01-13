@@ -14,7 +14,7 @@ from kivy.graphics.texture import Texture
 import numpy as np
 import Recognition
 import CreateEmbedVector
-import matplotlib.pyplot as plt
+import PIL
 
 Builder.load_string('''
 <QrtestHome>:
@@ -50,6 +50,10 @@ Builder.load_string('''
 
 model = CreateEmbedVector.Model()
 find_match  = Recognition.Recognition()
+find_match.update_List()
+for ele in find_match.list_vector:
+    print(ele[0])
+
 
 class KivyCamera(Image):
 
@@ -73,11 +77,9 @@ class KivyCamera(Image):
 
             w, h = frame.shape[1], frame.shape[0]
             box, _, e = self.model.detect(frame,False,down_sample=8)
-            #print(box, e)
             if box != None:
-                #draw Bouding box
                 cv2.rectangle(frame,(box[0], box[1]), (box[2], box[3]),thickness=1 ,color=(0,255,0))
-                #pass
+
 
             if not texture or texture.width != w or texture.height != h:
                 self.texture = texture = Texture.create(size=(w, h))
@@ -85,11 +87,9 @@ class KivyCamera(Image):
             texture.blit_buffer(frame.tobytes(), colorfmt='bgr')
             self.canvas.ask_update()
 
-
 capture = None
 
 class QrtestHome(BoxLayout):
-
     def init_qrtest(self):
         pass
 
@@ -114,15 +114,12 @@ class QrtestHome(BoxLayout):
         im = cv2.cvtColor(im, cv2.COLOR_RGBA2RGB)
 
         box, det_im, _ = model.detect(im, True, down_sample=1)
-        print(box, det_im.shape, _)
+        det_im= PIL.Image.fromarray(det_im.astype('uint8'), 'RGB')
         embed_vec = model.create_vector(det_im)
-        print(embed_vec)
-        det_im.save('Test.png')
-        pass
         matches = find_match.Best_match(embed_vec)
 
         #This face MAY belong to a stranger
-        if len(matches) == 0:
+        if matches == -1:
             #pop up: Unrecognized face, need register
             pass
         else:
@@ -130,8 +127,7 @@ class QrtestHome(BoxLayout):
             pass
 
         #model.save_embed_vector(embed_vec, person_name )
-        im.save("test.png")
-        #_,
+
         pass
 
 
