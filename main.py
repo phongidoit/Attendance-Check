@@ -12,7 +12,9 @@ from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.graphics.texture import Texture
 import numpy as np
+import Recognition
 import CreateEmbedVector
+import matplotlib.pyplot as plt
 
 Builder.load_string('''
 <QrtestHome>:
@@ -47,6 +49,7 @@ Builder.load_string('''
 ''')
 
 model = CreateEmbedVector.Model()
+find_match  = Recognition.Recognition()
 
 class KivyCamera(Image):
 
@@ -70,10 +73,10 @@ class KivyCamera(Image):
 
             w, h = frame.shape[1], frame.shape[0]
             box, _, e = self.model.detect(frame,False,down_sample=8)
-            print(box, e)
+            #print(box, e)
             if box != None:
                 #draw Bouding box
-                cv2.rectangle(frame,(box[0], box[1]), (box[2], box[3]), color=(0,255,0))
+                cv2.rectangle(frame,(box[0], box[1]), (box[2], box[3]),thickness=1 ,color=(0,255,0))
                 #pass
 
             if not texture or texture.width != w or texture.height != h:
@@ -84,7 +87,6 @@ class KivyCamera(Image):
 
 
 capture = None
-
 
 class QrtestHome(BoxLayout):
 
@@ -104,8 +106,30 @@ class QrtestHome(BoxLayout):
         EventLoop.close()
 
     def capture(self):
-        camera = self.ids['qrcam']
-        im = camera.export_as_image()
+        camera = self.ids['qrcam'].texture
+        h, w = camera.height, camera.width
+        print(h, w)
+        im = np.frombuffer(camera.pixels, np.uint8)
+        im = im.reshape(h, w, 4)
+        im = cv2.cvtColor(im, cv2.COLOR_RGBA2RGB)
+
+        box, det_im, _ = model.detect(im, True, down_sample=1)
+        print(box, det_im.shape, _)
+        embed_vec = model.create_vector(det_im)
+        print(embed_vec)
+        det_im.save('Test.png')
+        pass
+        matches = find_match.Best_match(embed_vec)
+
+        #This face MAY belong to a stranger
+        if len(matches) == 0:
+            #pop up: Unrecognized face, need register
+            pass
+        else:
+            #tick pass for user,
+            pass
+
+        #model.save_embed_vector(embed_vec, person_name )
         im.save("test.png")
         #_,
         pass
