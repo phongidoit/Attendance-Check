@@ -8,6 +8,9 @@ import json
 import random
 import cv2
 
+def convert_i_to_id(x):
+	#string is return, be aware
+	return (4 - len(str(x))) * '0' + str(x)
 
 class Model:
 	def __init__(self):
@@ -47,7 +50,7 @@ class Model:
 				cv2.imwrite("test1.png", np.flip(detect_im, axis=-1))
 
 			#convert to PIL for easy to handle
-			#detect_im = PIL.Image.fromarray(detect_im.astype('uint8'), 'RGB')
+			detect_im = PIL.Image.fromarray(detect_im.astype('uint8'), 'RGB')
 			return ori_box, detect_im, None
 		except Exception as e:
 			return None, None, e
@@ -62,19 +65,14 @@ class Model:
 		#Expect id to be string, example: "0001"
 		f= open(save_path)
 		file = json.loads(f)
-		n_line = len(f.readlines())
-		while True:
-			id=n_line-1
-			id = (4-len(id))*'0' + id
-			try:
-				f = open(save_path)
-				continue
-			except:
-				dic = {"id":id, "name":name}
-				file.update(dic)
-				json.dumps(file, f)
-				torch.save(vector, id+name)
-				break
+
+
+		id=n_line-1
+		id = convert_i_to_id(id)
+		dic = {"id": id, "name": name}
+		file.update(dic)
+		json.dumps(file, f)
+		torch.save(vector, "./Embed_Vectors/"+id+'.pt')
 
 		f.close()
 		return

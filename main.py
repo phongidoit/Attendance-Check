@@ -23,7 +23,7 @@ Builder.load_string('''
         orientation: "vertical"
 
         Label:
-            height: 20
+            height: 50
             size_hint_y: None
             text: 'Attendance Check'
 
@@ -32,27 +32,25 @@ Builder.load_string('''
 
         BoxLayout:
             orientation: "horizontal"
-            height: 20
+            height: 50
             size_hint_y: None
 
             Button:
                 id: butt_start
-                size_hint: 0.5,1.5
+                size_hint: 0.5,1
                 text: "Start"
                 on_press: root.dostart()
 
             Button:
                 id: butt_exit
                 text: "Register"
-                size_hint: 0.5,1.5
+                size_hint: 0.5,1
                 on_press: root.capture()
 ''')
 
 model = CreateEmbedVector.Model()
 find_match  = Recognition.Recognition()
 find_match.update_List()
-for ele in find_match.list_vector:
-    print(ele[0])
 
 
 class KivyCamera(Image):
@@ -79,7 +77,6 @@ class KivyCamera(Image):
             box, _, e = self.model.detect(frame,False,down_sample=8)
             if box != None:
                 cv2.rectangle(frame,(box[0], box[1]), (box[2], box[3]),thickness=1 ,color=(0,255,0))
-
 
             if not texture or texture.width != w or texture.height != h:
                 self.texture = texture = Texture.create(size=(w, h))
@@ -108,22 +105,27 @@ class QrtestHome(BoxLayout):
     def capture(self):
         camera = self.ids['qrcam'].texture
         h, w = camera.height, camera.width
-        print(h, w)
         im = np.frombuffer(camera.pixels, np.uint8)
         im = im.reshape(h, w, 4)
         im = cv2.cvtColor(im, cv2.COLOR_RGBA2RGB)
 
         box, det_im, _ = model.detect(im, True, down_sample=1)
-        det_im= PIL.Image.fromarray(det_im.astype('uint8'), 'RGB')
+        if det_im == None:
+            #Output Retry or something
+
+            return
+        #det_im= PIL.Image.fromarray(det_im.astype('uint8'), 'RGB')
         embed_vec = model.create_vector(det_im)
         matches = find_match.Best_match(embed_vec)
 
         #This face MAY belong to a stranger
         if matches == -1:
             #pop up: Unrecognized face, need register
+            print('who is this?')
             pass
         else:
             #tick pass for user,
+            id = print(CreateEmbedVector.convert_i_to_id(matches))
             pass
 
         #model.save_embed_vector(embed_vec, person_name )
