@@ -6,52 +6,110 @@ from kivy.core.window import Window
 from kivy.uix.label import Label
 from kivy.uix.camera import Camera
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.floatlayout import FloatLayout
 import cv2
 from kivy.uix.image import Image
 from kivy.clock import Clock
 from kivy.lang import Builder
 from kivy.graphics.texture import Texture
+from kivy.uix.screenmanager import ScreenManager, Screen
 import numpy as np
 import Recognition
 import CreateEmbedVector
 import PIL
 
 Builder.load_string('''
+
 <QrtestHome>:
+    id:  qrtest
+    orientation: "vertical"
 
     BoxLayout:
-        orientation: "vertical"
+        id: Header
+        orientation: "horizontal"
+        height: 50
+
+        size_hint_y: None
+
+        canvas.before:
+            Color:
+                rgba: (0.25, 0.36, 1, 1)
+
+            Rectangle:
+                size: self.size
+                pos: self.pos    
 
         Label:
-            height: 50
-            size_hint_y: None
-            text: 'Attendance Check'
+            anchor_x: 'center'
+            anchor_y: 'center'
+            text: "Attendance Check"
 
-        KivyCamera:
-            id: qrcam
+        Button:
+            id: ListPeople
+            size_hint: 0.15, 0.8
+            size_hint_max_x: 60
+            text: "DS" 
+            on_press: app.root.manager.current = 'second_screen'
 
-        BoxLayout:
-            orientation: "horizontal"
-            height: 50
-            size_hint_y: None
+    KivyCamera:
+        id: qrcam
 
-            Button:
-                id: butt_start
-                size_hint: 0.5,1
-                text: "Start"
-                on_press: root.dostart()
+    BoxLayout:
+        id: ControlButton
+        orientation: "horizontal"
+        height: 50
+        size_hint_y: None
 
-            Button:
-                id: butt_exit
-                text: "Register"
-                size_hint: 0.5,1
-                on_press: root.capture()
+        Button:
+            id: butt_start
+            size_hint: 0.5,1
+            text: "Start"
+            on_press: qrtest.dostart()
+
+        Button:
+            id: butt_exit
+            text: "Register"
+            size_hint: 0.5,1
+            on_press: qrtest.capture()
+
+<AttendanceList>:
+    id:  AttList
+    orientation: "vertical"
+
+    BoxLayout:
+        id: Header1
+        orientation: "horizontal"
+        height: 50
+        size_hint_y: None
+
+        canvas.before:
+            Color:
+                rgba: (0.25, 0.36, 1, 1)
+
+            Rectangle:
+                size: self.size
+                pos: self.pos    
+
+        Label:
+            anchor_x: 'center'
+            anchor_y: 'center'
+            text: "Attendance Check"
+
+<First@Screen>:
+    QrtestHome
+<Second@Screen>:
+    AttendanceList                                           
 ''')
 
 model = CreateEmbedVector.Model()
 find_match  = Recognition.Recognition()
 find_match.update_List()
 
+class First(Screen):
+    pass
+
+class Second(Screen):
+    pass
 
 class KivyCamera(Image):
 
@@ -111,10 +169,9 @@ class QrtestHome(BoxLayout):
 
         box, det_im, _ = model.detect(im, True, down_sample=1)
         if det_im == None:
-            #Output Retry or something
 
             return
-        #det_im= PIL.Image.fromarray(det_im.astype('uint8'), 'RGB')
+
         embed_vec = model.create_vector(det_im)
         matches = find_match.Best_match(embed_vec)
 
@@ -125,27 +182,36 @@ class QrtestHome(BoxLayout):
             pass
         else:
             #tick pass for user,
-            id = print(CreateEmbedVector.convert_i_to_id(matches))
+            id = CreateEmbedVector.convert_i_to_id(matches)
+            print(find_match.list_id[matches]['name'])
             pass
 
-        #model.save_embed_vector(embed_vec, person_name )
 
+    def open_AttendanceList(self):
         pass
 
+class AttendanceList(BoxLayout):
+    pass
 
 class qrtestApp(App):
 
     def build(self):
         Window.clearcolor = (.4,.4,.4,1)
         Window.size = (400, 500)
-        homeWin = QrtestHome()
-        homeWin.init_qrtest()
-        return homeWin
+        sm =ScreenManager()
+        sm.add_widget(First(name='first_screen'))
+        sm.add_widget(Second(name='second_screen'))
+        #homeWin = QrtestHome()
+        #homeWin.init_qrtest()
+        return sm
 
     def on_stop(self):
         global capture
         if capture:
             capture.release()
             capture = None
+
+
+
 
 qrtestApp().run()

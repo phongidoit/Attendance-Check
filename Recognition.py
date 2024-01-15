@@ -9,10 +9,14 @@ class Recognition:
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 		self.score_fn = CosineSimilarity(dim=0, eps = 1e-5)
 		self.list_vector = []
+		self.list_id = []
 
 	def update_List(self, vector_path="./Embed_Vectors/"):
 		for filename in os.listdir(vector_path):
 			self.list_vector.append(torch.load(vector_path+filename, map_location=self.device))
+		f = open("Embed_vector.json")
+		self.list_id = json.load(f)
+
 		return
 
 	def Best_match(self, vector):
