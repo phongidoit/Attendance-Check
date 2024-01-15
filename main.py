@@ -7,6 +7,7 @@ from kivy.uix.label import Label
 from kivy.uix.camera import Camera
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.textinput import TextInput
 import cv2
 from kivy.uix.image import Image
 from kivy.clock import Clock
@@ -49,28 +50,37 @@ Builder.load_string('''
             size_hint: 0.15, 0.8
             size_hint_max_x: 60
             text: "DS" 
-            on_press: app.root.manager.current = 'second_screen'
+            on_press: root.parent.manager.current = 'second_screen'
 
     KivyCamera:
         id: qrcam
 
     BoxLayout:
         id: ControlButton
-        orientation: "horizontal"
-        height: 50
+        orientation: "vertical"
+        height: 80
         size_hint_y: None
-
+            
         Button:
             id: butt_start
-            size_hint: 0.5,1
+            size_hint: 1, 1
             text: "Start"
             on_press: qrtest.dostart()
-
-        Button:
-            id: butt_exit
-            text: "Register"
-            size_hint: 0.5,1
-            on_press: qrtest.capture()
+        
+        BoxLayout:
+            Button:
+                id: add_new
+                text: "Add New"
+                size_hint: 0.5, 1
+                on_press:   qrtest.addnew()
+                
+            Button:
+                id: butt_exit
+                text: "Register"
+                size_hint: 0.5,1
+                on_press: qrtest.capture()
+                
+           
 
 <AttendanceList>:
     id:  AttList
@@ -78,22 +88,32 @@ Builder.load_string('''
 
     BoxLayout:
         id: Header1
+        size_hint: 1, 0.15
+        size_hint_max_y: 50
         orientation: "horizontal"
-        height: 50
-        size_hint_y: None
-
+        pos_hint:{"top":1}
+       
         canvas.before:
             Color:
                 rgba: (0.25, 0.36, 1, 1)
 
             Rectangle:
                 size: self.size
-                pos: self.pos    
-
+                pos: self.pos  
+                  
+        Button:
+            id: butt_back
+            size_hint: 0.15, 0.8
+            
+            text: "Back"
+            size_hint_max_x: 65
+            on_press: root.parent.manager.current="first_screen"
+            
         Label:
             anchor_x: 'center'
             anchor_y: 'center'
             text: "Attendance Check"
+            
 
 <First@Screen>:
     QrtestHome
@@ -148,6 +168,7 @@ class QrtestHome(BoxLayout):
     def init_qrtest(self):
         pass
 
+
     def dostart(self, *largs):
         global capture
         capture = cv2.VideoCapture(0)
@@ -185,6 +206,22 @@ class QrtestHome(BoxLayout):
             id = CreateEmbedVector.convert_i_to_id(matches)
             print(find_match.list_id[matches]['name'])
             pass
+
+    def add_new(self):
+        new_id = CreateEmbedVector.convert_i_to_id( find_match.list_id[-1]['id']+1 )
+        #name =
+        camera = self.ids['qrcam'].texture
+        h, w = camera.height, camera.width
+        im = np.frombuffer(camera.pixels, np.uint8)
+        im = im.reshape(h, w, 4)
+        im = cv2.cvtColor(im, cv2.COLOR_RGBA2RGB)
+
+        box, det_im, _ = model.detect(im, True, down_sample=1)
+        if det_im == None:
+            return
+
+        embed_vec = model.create_vector(det_im)
+        model.save_embed_vector(embed_vec, det_im, new_id, name)
 
 
     def open_AttendanceList(self):

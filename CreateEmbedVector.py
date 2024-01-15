@@ -12,6 +12,9 @@ def convert_i_to_id(x):
 	#string is return, be aware
 	return (4 - len(str(x))) * '0' + str(x)
 
+def convert_id_to_i(id):
+	return int(id)
+
 class Model:
 	def __init__(self):
 		self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
@@ -61,14 +64,13 @@ class Model:
 		embed_vector = self.CNN(self.preprocessing(img).unsqueeze(0).to(self.device))[0]
 		return embed_vector
 
-	def save_embed_vector(self, vector, id, name="Test name", save_path = './Embed_vector.json'):
+	def save_embed_vector(self, vector, img, id, name="Test name", save_path = './Embed_vector.json', img_path="./Face/"):
 		#Expect id to be string, example: "0001"
 		f= open(save_path)
 		file = json.loads(f)
 
 
-		id=n_line-1
-		id = convert_i_to_id(id)
+		#id = convert_i_to_id(id)
 		dic = {"id": id, "name": name}
 		file.update(dic)
 		json.dumps(file, f)
