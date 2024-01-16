@@ -5,9 +5,11 @@ from kivy.base import EventLoop
 from kivy.core.window import Window
 from kivy.uix.label import Label
 from kivy.uix.camera import Camera
+from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.textinput import TextInput
+from kivy.uix.popup import Popup
 import cv2
 from kivy.uix.image import Image
 from kivy.clock import Clock
@@ -19,7 +21,9 @@ import Recognition
 import CreateEmbedVector
 import PIL
 
+
 Builder.load_string('''
+
 
 <QrtestHome>:
     id:  qrtest
@@ -58,40 +62,50 @@ Builder.load_string('''
     BoxLayout:
         id: ControlButton
         orientation: "vertical"
-        height: 80
-        size_hint_y: None
+        size_hint_y: 0.3
+        size_hint_y_min: 150
+        
+        
+        BoxLayout:  
+            id: nameField    
+                 
+            TextInput:
+                id: newName
+                hint_text: "New person's name"
+                size_hint: 1, 1
+                id: nameInput
+                multiline: False
+        
+            Button:
+                id: add_new
+                text: "Add"
+                disabled: True
+                size_hint: 0.4, 1
+                on_press:   qrtest.add_new()
+                
+        Button:
+            id: checkIn
+            text: "Check attendance"
+            disabled: True
+            size_hint: 1,1
+            on_press: qrtest.capture()        
             
         Button:
             id: butt_start
-            size_hint: 1, 1
-            text: "Start"
+            size_hint: 1, 1.5
+            text: "Start/Stop Camera"
             on_press: qrtest.dostart()
         
-        BoxLayout:
-            Button:
-                id: add_new
-                text: "Add New"
-                size_hint: 0.5, 1
-                on_press:   qrtest.addnew()
-                
-            Button:
-                id: butt_exit
-                text: "Register"
-                size_hint: 0.5,1
-                on_press: qrtest.capture()
-                
-           
-
 <AttendanceList>:
     id:  AttList
     orientation: "vertical"
-
+    minimum_size : root.parent.size 
     BoxLayout:
         id: Header1
         size_hint: 1, 0.15
         size_hint_max_y: 50
         orientation: "horizontal"
-        pos_hint:{"top":1}
+        #pos_hint: {"right":0.1,"top":0.5}
        
         canvas.before:
             Color:
@@ -114,6 +128,7 @@ Builder.load_string('''
             anchor_y: 'center'
             text: "Attendance Check"
             
+    BoxLayout:        
 
 <First@Screen>:
     QrtestHome
@@ -124,6 +139,7 @@ Builder.load_string('''
 model = CreateEmbedVector.Model()
 find_match  = Recognition.Recognition()
 find_match.update_List()
+
 
 class First(Screen):
     pass
@@ -164,14 +180,56 @@ class KivyCamera(Image):
 
 capture = None
 
+class Welcome_popup(Popup):
+    def __init__(self,  person_name, **kwargs):
+        super(Welcome_popup, self).__init__(**kwargs)
+
+        self.size_hint = (0.8, 0.5)
+
+        self.title="Welcome new person"
+        self.content = BoxLayout(orientation='vertical')
+
+        sMessage = "Hello, "+ person_name+"! Thank you for register!"
+        self.message = Label(text=sMessage)
+        self.accButton = Button(text="OK", size_hint_max_y=70)
+        self.accButton.bind(on_press= self.dismiss )
+
+        self.content.add_widget(self.message)
+        self.content.add_widget(self.accButton)
+
+class Message_popup(Popup):
+    def __init__(self,  message, **kwargs):
+        super(Message_popup, self).__init__(**kwargs)
+
+        self.size_hint = (0.8, 0.5)
+
+        self.title="Notification"
+        self.content = BoxLayout(orientation='vertical')
+
+        self.message = Label(text=message)
+        self.accButton = Button(text="OK", size_hint_max_y=70)
+        self.accButton.bind(on_press= self.dismiss )
+
+        self.content.add_widget(self.message)
+        self.content.add_widget(self.accButton)
+
+
 class QrtestHome(BoxLayout):
+
     def init_qrtest(self):
         pass
-
 
     def dostart(self, *largs):
         global capture
         capture = cv2.VideoCapture(0)
+        self.ids.qrcam.start(capture)
+        self.ids["add_new"].disabled = False
+        self.ids["checkIn"].disabled = False
+
+
+    def switch_cam(self, *largs):
+        i=1
+        capture = cv2.VideoCapture(i)
         self.ids.qrcam.start(capture)
 
     def doexit(self):
@@ -190,26 +248,31 @@ class QrtestHome(BoxLayout):
 
         box, det_im, _ = model.detect(im, True, down_sample=1)
         if det_im == None:
-
+            mes = "No face detected!"
+            fail_det_popup = Message_popup(mes)
+            fail_det_popup.open()
             return
 
-        embed_vec = model.create_vector(det_im)
+        embed_vec = model.create_vector(det_im)[0]
+
         matches = find_match.Best_match(embed_vec)
 
-        #This face MAY belong to a stranger
+
         if matches == -1:
-            #pop up: Unrecognized face, need register
-            print('who is this?')
-            pass
+            mes = "Unable to recognize this face, try again!"
+            stranger_popup = Message_popup(mes)
+            stranger_popup.open()
+            return
         else:
             #tick pass for user,
             id = CreateEmbedVector.convert_i_to_id(matches)
             print(find_match.list_id[matches]['name'])
             pass
 
+
     def add_new(self):
-        new_id = CreateEmbedVector.convert_i_to_id( find_match.list_id[-1]['id']+1 )
-        #name =
+        new_id = CreateEmbedVector.convert_i_to_id( int(find_match.list_id[-1]['id'])+1 )
+        name = "Hello"
         camera = self.ids['qrcam'].texture
         h, w = camera.height, camera.width
         im = np.frombuffer(camera.pixels, np.uint8)
@@ -217,11 +280,31 @@ class QrtestHome(BoxLayout):
         im = cv2.cvtColor(im, cv2.COLOR_RGBA2RGB)
 
         box, det_im, _ = model.detect(im, True, down_sample=1)
+
         if det_im == None:
+            mes = "No face detected!"
+            fail_det_popup = Message_popup(mes)
+            fail_det_popup.open()
             return
 
+        name = self.ids['nameInput'].text
+        if name == "":
+            mes = "Type the name of this user before add!"
+            empty_name_popup = Message_popup(mes)
+            empty_name_popup.open()
+            return
+
+        self.ids['nameInput'].text = ""
+
         embed_vec = model.create_vector(det_im)
-        model.save_embed_vector(embed_vec, det_im, new_id, name)
+
+        find_match.list_id.append({"id":new_id, "name":name})
+        model.save_embed_vector(find_match.list_id, embed_vec, det_im, new_id, name )
+
+        find_match.update_List()
+        self.popup = Welcome_popup(name)
+        #self.popup.bind(on_dismiss=self.handle_popup_dismiss)
+        self.popup.open()
 
 
     def open_AttendanceList(self):

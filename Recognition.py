@@ -12,11 +12,13 @@ class Recognition:
 		self.list_id = []
 
 	def update_List(self, vector_path="./Embed_Vectors/"):
+		self.list_vector = []
+		self.list_id = []
 		for filename in os.listdir(vector_path):
-			self.list_vector.append(torch.load(vector_path+filename, map_location=self.device))
-		f = open("Embed_vector.json")
+			self.list_vector.append(torch.load(vector_path + filename, map_location=self.device))
+		f = open("./Embed_vector.json")
 		self.list_id = json.load(f)
-
+		print("Num vec:", len(self.list_vector))
 		return
 
 	def Best_match(self, vector):
@@ -28,6 +30,7 @@ class Recognition:
 
 		match = np.argmax(scores)
 		conf_score = scores[match]
+		#print("score: ", scores)
 		if conf_score<0.6:
 			#label unknow
 			return -1
