@@ -18,7 +18,6 @@ class Recognition:
 			self.list_vector.append(torch.load(vector_path + filename, map_location=self.device))
 		f = open("./Embed_vector.json")
 		self.list_id = json.load(f)
-
 		return
 
 	def Best_match(self, vector):

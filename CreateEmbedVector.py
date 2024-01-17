@@ -64,13 +64,13 @@ class Model:
 		embed_vector = self.CNN(self.preprocessing(img).unsqueeze(0).to(self.device))
 		return embed_vector
 
-	def save_embed_vector(self, list_id, vector, img, id, name="Test name", save_path = './Embed_vector.json', img_path="./Face/"):
+	def save_embed_vector(self, list_id, vector=None, id=None, name="Test name", save_path = './Embed_vector.json', img_path="./Face/"):
 		#Expect id to be string, example: "0001"
 		f= open(save_path, 'w')
 
-
 		json.dump(list_id, f)
-		torch.save(vector, "./Embed_Vectors/"+id+"_"+name+'.pt')
+		if vector!=None:
+			torch.save(vector, "./Embed_Vectors/"+id+"_"+name+'.pt')
 
 		f.close()
 		return

@@ -1,6 +1,8 @@
 import kivy
 from kivy.app import App
 import kivy.core.text
+from kivy.graphics import Rectangle
+from kivy.graphics import Color
 from kivy.base import EventLoop
 from kivy.core.window import Window
 from kivy.uix.checkbox import CheckBox
@@ -8,7 +10,6 @@ from kivy.uix.label import Label
 from kivy.uix.camera import Camera
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
@@ -129,10 +130,16 @@ Builder.load_string('''
             text: "Attendance Check"
             
         Button:
-            id: load_list
+            id: reload
             size_hint: 0.15, 0.8
-            text: "Load"
-            on_press: AttList.init_ui()    
+            text: "Reload"
+            on_press: AttList.update_cBox()    
+            
+        Button:
+            id: load_list
+            size_hint: 0.3, 0.8
+            text: "Uncheck All"
+            on_press: AttList.uncheck_all()  
             
     ScrollView: 
         id: ListAttendanceView
@@ -140,18 +147,11 @@ Builder.load_string('''
         do_scroll_y: True
         scroll_timeout: 250
         scroll_distance: 20
-        size_hint:(1,1)
-        
-        GridLayout:
-            id: ListAttendance
-            height : self.minimum_height
-            spacing:10 
-            cols: 1
-                  
+        size_hint:(1,1)                  
 
-<First@Screen>:
+<First>:
     QrtestHome
-<Second@Screen>:
+<Second>:
     AttendanceList                                           
 ''')
 
@@ -163,7 +163,14 @@ class First(Screen):
     pass
 
 class Second(Screen):
-    pass
+    #Because of threading, on enter will run before inner child is load so I can't access ids
+    #use clock to schedule the time
+    #Got answer from: https://stackoverflow.com/questions/72174380/attribute-error-when-using-kivy-screen-manager-and-self-ids
+    def on_enter(self, *args):
+        Clock.schedule_once(self.run_stuff, 0.1)
+
+    def run_stuff(self,  dt=0):
+        print("IDs of screen 2: ", self.ids)
 
 class KivyCamera(Image):
 
@@ -282,10 +289,14 @@ class QrtestHome(BoxLayout):
             stranger_popup.open()
             return
         else:
-            #tick pass for user,
+            #Ouput notification and update is_here status to both list and json file,
             self.ids['nameInput'].hint_text = "Hello "+ find_match.list_id[matches]['name']+"!"
+
             id = CreateEmbedVector.convert_i_to_id(matches)
-            pass
+
+            find_match.list_id[matches]['is_here'] = 1
+            model.save_embed_vector(find_match.list_id)
+            return
 
 
     def add_new(self):
@@ -316,44 +327,65 @@ class QrtestHome(BoxLayout):
 
         embed_vec = model.create_vector(det_im)
 
-        find_match.list_id.append({"id":new_id, "name":name})
-        model.save_embed_vector(find_match.list_id, embed_vec, det_im, new_id, name )
+        find_match.list_id.append({"id":new_id, "name":name, "is_here": True})
+
+        #Save new vector and is id
+        model.save_embed_vector(find_match.list_id, embed_vec, new_id,name )
 
         find_match.update_List()
         self.popup = Welcome_popup(name)
         self.popup.open()
 
-class Entry(Button):
-    def __init__(self, id, name, **kwargs):
+class Entry(BoxLayout):
+    def __init__(self, usrid, name, is_here, **kwargs):
         super(Entry, self).__init__(**kwargs)
-        #self.orientation = "horizontal"
+        self.id = usrid
+        self.orientation = "horizontal"
         self.size_hint = (0.95, None)
         self.height = 100
-
         self.set_center_x(0.5)
         self.text=name
-        #self.add_widget(Label(text=id, size_hint_x=0.2) )
-        #self.add_widget(Label(text=name))
+        self.cBox= CheckBox(active=bool(is_here))
+        self.add_widget(Label(text=usrid, size_hint_x=0.2) )
+        self.add_widget(Label(text=name))
+        self.add_widget(self.cBox)
+
+    def return_cBox(self):
+        return self.cBox
 
 class AttendanceList(BoxLayout):
     def __init__(self, **kwargs):
         super(AttendanceList, self).__init__(**kwargs)
-        #Clock.schedule_once(self.init_ui, 0)
-        #self.init_ui()
+        self.list_cbox={}
+        Clock.schedule_once(self.init_ui, 0)
+
 
     def init_ui(self, dt=0):
-        ScrollView= self.ids['ListAttendanceView']
+        self.ScrollView= self.ids['ListAttendanceView']
         temp = self.ids['Header1']
 
-        ListView = self.ids['ListAttendance']
-        ListView.hint_size=(1, None)
-        ListView.bind(minimum_height= ListView.setter('height'))
+        self.Listview=GridLayout(cols=1, spacing=10, size_hint_y=None)
+        self.Listview.bind(minimum_height= self.Listview.setter('height'))
         for ele in find_match.list_id:
-            entry = Entry(ele['id'], ele['name'])
-            ListView.add_widget(entry)
-        print(ScrollView.height)
-        print(ListView.height)
+            entry = Entry(ele['id'], ele['name'], ele['is_here'])
+            self.list_cbox[ele['id']] = entry.return_cBox()
+            self.Listview.add_widget(entry)
+        self.ScrollView.add_widget(self.Listview)
 
+    def update_cBox(self):
+        for ele in find_match.list_id:
+            try:
+                self.list_cbox[ele['id']].active = ele['is_here']
+            except:
+                entry = Entry(ele['id'], ele['name'], ele['is_here'])
+                self.list_cbox[ele['id']] = entry.return_cBox()
+                self.Listview.add_widget(entry)
+
+    def uncheck_all(self):
+        for ele in find_match.list_id:
+            ele['is_here'] = 0
+            self.list_cbox[ele['id']].active = False
+        model.save_embed_vector(find_match.list_id)
 
 class qrtestApp(App):
     def build(self):
@@ -362,8 +394,6 @@ class qrtestApp(App):
         sm =ScreenManager()
         sm.add_widget(First(name='first_screen'))
         sm.add_widget(Second(name='second_screen'))
-        #homeWin = QrtestHome()
-        #homeWin.init_qrtest()
         return sm
 
     def on_stop(self):

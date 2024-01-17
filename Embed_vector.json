@@ -1,1 +1,1 @@
-[{"id": "0000", "name": "oriPhong"}, {"id": "0001", "name": "lu"}, {"id": "0002", "name": "Rock"}, {"id": "0003", "name": "keanu"}, {"id": "0004", "name": "vin"}, {"id": "0005", "name": "hanh"}, {"id": "0006", "name": "tom"}, {"id": "0007", "name": "tom2"}, {"id": "0008", "name": "zit"}, {"id": "0009", "name": "jesica"}, {"id": "0010", "name": "pew"}]
+[{"id": "0000", "name": "oriPhong", "is_here": 0}, {"id": "0001", "name": "lu", "is_here": 0}, {"id": "0002", "name": "scott", "is_here": true}]
