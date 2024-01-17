@@ -3,13 +3,16 @@ from kivy.app import App
 import kivy.core.text
 from kivy.base import EventLoop
 from kivy.core.window import Window
+from kivy.uix.checkbox import CheckBox
 from kivy.uix.label import Label
 from kivy.uix.camera import Camera
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.gridlayout import GridLayout
 from kivy.uix.textinput import TextInput
 from kivy.uix.popup import Popup
+from kivy.uix.scrollview import ScrollView
 import cv2
 from kivy.uix.image import Image
 from kivy.clock import Clock
@@ -23,8 +26,6 @@ import PIL
 
 
 Builder.load_string('''
-
-
 <QrtestHome>:
     id:  qrtest
     orientation: "vertical"
@@ -64,7 +65,6 @@ Builder.load_string('''
         orientation: "vertical"
         size_hint_y: 0.3
         size_hint_y_min: 150
-        
         
         BoxLayout:  
             id: nameField    
@@ -128,7 +128,26 @@ Builder.load_string('''
             anchor_y: 'center'
             text: "Attendance Check"
             
-    BoxLayout:        
+        Button:
+            id: load_list
+            size_hint: 0.15, 0.8
+            text: "Load"
+            on_press: AttList.init_ui()    
+            
+    ScrollView: 
+        id: ListAttendanceView
+        do_scroll_x: False
+        do_scroll_y: True
+        scroll_timeout: 250
+        scroll_distance: 20
+        size_hint:(1,1)
+        
+        GridLayout:
+            id: ListAttendance
+            height : self.minimum_height
+            spacing:10 
+            cols: 1
+                  
 
 <First@Screen>:
     QrtestHome
@@ -139,7 +158,6 @@ Builder.load_string('''
 model = CreateEmbedVector.Model()
 find_match  = Recognition.Recognition()
 find_match.update_List()
-
 
 class First(Screen):
     pass
@@ -213,9 +231,7 @@ class Message_popup(Popup):
         self.content.add_widget(self.message)
         self.content.add_widget(self.accButton)
 
-
 class QrtestHome(BoxLayout):
-
     def init_qrtest(self):
         pass
 
@@ -225,7 +241,6 @@ class QrtestHome(BoxLayout):
         self.ids.qrcam.start(capture)
         self.ids["add_new"].disabled = False
         self.ids["checkIn"].disabled = False
-
 
     def switch_cam(self, *largs):
         i=1
@@ -240,13 +255,18 @@ class QrtestHome(BoxLayout):
         EventLoop.close()
 
     def capture(self):
+        if len(find_match.list_vector) == 0:
+            mes = "Database is empty, add more people!"
+            Empty_db_popup = Message_popup(mes)
+            Empty_db_popup.open()
+            return
         camera = self.ids['qrcam'].texture
         h, w = camera.height, camera.width
         im = np.frombuffer(camera.pixels, np.uint8)
         im = im.reshape(h, w, 4)
         im = cv2.cvtColor(im, cv2.COLOR_RGBA2RGB)
 
-        box, det_im, _ = model.detect(im, True, down_sample=1)
+        box, det_im, _ = model.detect(im, False, down_sample=1)
         if det_im == None:
             mes = "No face detected!"
             fail_det_popup = Message_popup(mes)
@@ -254,9 +274,7 @@ class QrtestHome(BoxLayout):
             return
 
         embed_vec = model.create_vector(det_im)[0]
-
         matches = find_match.Best_match(embed_vec)
-
 
         if matches == -1:
             mes = "Unable to recognize this face, try again!"
@@ -265,8 +283,8 @@ class QrtestHome(BoxLayout):
             return
         else:
             #tick pass for user,
+            self.ids['nameInput'].hint_text = "Hello "+ find_match.list_id[matches]['name']+"!"
             id = CreateEmbedVector.convert_i_to_id(matches)
-            print(find_match.list_id[matches]['name'])
             pass
 
 
@@ -279,7 +297,7 @@ class QrtestHome(BoxLayout):
         im = im.reshape(h, w, 4)
         im = cv2.cvtColor(im, cv2.COLOR_RGBA2RGB)
 
-        box, det_im, _ = model.detect(im, True, down_sample=1)
+        box, det_im, _ = model.detect(im, False, down_sample=1)
 
         if det_im == None:
             mes = "No face detected!"
@@ -303,18 +321,41 @@ class QrtestHome(BoxLayout):
 
         find_match.update_List()
         self.popup = Welcome_popup(name)
-        #self.popup.bind(on_dismiss=self.handle_popup_dismiss)
         self.popup.open()
 
+class Entry(Button):
+    def __init__(self, id, name, **kwargs):
+        super(Entry, self).__init__(**kwargs)
+        #self.orientation = "horizontal"
+        self.size_hint = (0.95, None)
+        self.height = 100
 
-    def open_AttendanceList(self):
-        pass
+        self.set_center_x(0.5)
+        self.text=name
+        #self.add_widget(Label(text=id, size_hint_x=0.2) )
+        #self.add_widget(Label(text=name))
 
 class AttendanceList(BoxLayout):
-    pass
+    def __init__(self, **kwargs):
+        super(AttendanceList, self).__init__(**kwargs)
+        #Clock.schedule_once(self.init_ui, 0)
+        #self.init_ui()
+
+    def init_ui(self, dt=0):
+        ScrollView= self.ids['ListAttendanceView']
+        temp = self.ids['Header1']
+
+        ListView = self.ids['ListAttendance']
+        ListView.hint_size=(1, None)
+        ListView.bind(minimum_height= ListView.setter('height'))
+        for ele in find_match.list_id:
+            entry = Entry(ele['id'], ele['name'])
+            ListView.add_widget(entry)
+        print(ScrollView.height)
+        print(ListView.height)
+
 
 class qrtestApp(App):
-
     def build(self):
         Window.clearcolor = (.4,.4,.4,1)
         Window.size = (400, 500)
@@ -330,8 +371,5 @@ class qrtestApp(App):
         if capture:
             capture.release()
             capture = None
-
-
-
 
 qrtestApp().run()

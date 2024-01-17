@@ -1,47 +1,16 @@
-from kivy.app import App
-from kivy.lang import Builder
-from kivy.uix.boxlayout import BoxLayout
-import time
-import CreateEmbedVector
-from PIL import Image
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.button import Button
+from kivy.uix.scrollview import ScrollView
+from kivy.core.window import Window
+from kivy.app import runTouchApp
 
-Builder.load_string('''
-<CameraClick>:
-    orientation: 'vertical'
-    Camera:
-        id: camera
-        play: True
-    ToggleButton:
-        text: 'Play'
-        on_press: camera.play = not camera.play
-        size_hint_y: None
-        height: '48dp'
-    Button:
-        text: 'Capture'
-        size_hint_y: None
-        height: '48dp'
-        on_press: root.capture()
-''')
+layout = GridLayout(cols=1, spacing=10, size_hint_y=None)
+# Make sure the height is such that there is something to scroll.
+layout.bind(minimum_height=layout.setter('height'))
+for i in range(100):
+    btn = Button(text=str(i), size_hint_y=None, height=40)
+    layout.add_widget(btn)
+root = ScrollView(size_hint=(1, None), size=(Window.width, Window.height))
+root.add_widget(layout)
 
-
-class CameraClick(BoxLayout):
-    def capture(self):
-        '''
-        Function to capture the images and give them the names
-        according to their captured time and date.
-        '''
-        camera = self.ids['camera']
-        timestr = time.strftime("%Y%m%d_%H%M%S")
-        im = camera.export_as_image()
-
-        im.save("Hello.png")
-        print("Captured")
-
-
-class TestCamera(App):
-
-    def build(self):
-        return CameraClick()
-
-
-TestCamera().run()
+runTouchApp(root)
