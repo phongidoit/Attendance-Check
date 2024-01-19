@@ -2,11 +2,11 @@
 
 
 a = Analysis(
-    ['main.py'],
+    ['main.py' ],
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=[Recognition, CreateEmbedVector],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

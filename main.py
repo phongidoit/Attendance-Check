@@ -96,7 +96,7 @@ Builder.load_string('''
         Button:
             id: butt_start
             size_hint: 1, 1.5
-            text: "Start/Stop Camera"
+            text: "Start Camera"
             on_press: qrtest.dostart()
         
 <AttendanceList>:
