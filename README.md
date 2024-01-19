@@ -16,5 +16,8 @@
 > pip install -r requirements.txt
 4. Run main.py
 
+## Android device installation <br>
+To be updated
+
 ### Application should display as follow
 ![App start up screen](App_startup.png)

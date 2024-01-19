@@ -1,3 +1,0 @@
-title=attendance_check
-author=Ghost
-orientation=portrait
