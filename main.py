@@ -25,6 +25,8 @@ import Recognition
 import CreateEmbedVector
 import PIL
 
+#from android.permissions import request_permissions, Permission
+
 
 Builder.load_string('''
 <QrtestHome>:
@@ -129,11 +131,7 @@ Builder.load_string('''
             anchor_y: 'center'
             text: "Attendance Check"
             
-        Button:
-            id: reload
-            size_hint: 0.15, 0.8
-            text: "Reload"
-            on_press: AttList.update_cBox()    
+  
             
         Button:
             id: load_list
@@ -147,7 +145,14 @@ Builder.load_string('''
         do_scroll_y: True
         scroll_timeout: 250
         scroll_distance: 20
-        size_hint:(1,1)                  
+        size_hint:(1,1) 
+        
+    Button:
+        id: reload
+        size_hint: 1, 0.2
+        background_color: (0.15, 0.1, 0.8, 1)
+        text: "Reload"
+        on_press: AttList.update_cBox()                   
 
 <First>:
     QrtestHome
@@ -391,6 +396,13 @@ class qrtestApp(App):
     def build(self):
         Window.clearcolor = (.4,.4,.4,1)
         Window.size = (400, 500)
+        '''
+        request_permissions([
+            Permission.CAMERA,
+            Permission.WRITE_EXTERNAL_STORAGE,
+            Permission.READ_EXTERNAL_STORAGE
+        ])
+        '''
         sm =ScreenManager()
         sm.add_widget(First(name='first_screen'))
         sm.add_widget(Second(name='second_screen'))

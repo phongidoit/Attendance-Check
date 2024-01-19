@@ -5,8 +5,8 @@ import PIL
 from torchvision import datasets, transforms
 import os
 import json
-import random
 import cv2
+import os, sys
 
 def convert_i_to_id(x):
 	#string is return, be aware
@@ -49,8 +49,6 @@ class Model:
 
 			ori_box= [ele*down_sample for ele in box]
 			detect_im = img[box[1]: box[3], box[0]: box[2]]
-			if save_img==True:
-				cv2.imwrite("test1.png", np.flip(detect_im, axis=-1))
 
 			#convert to PIL for easy to handle
 			detect_im = PIL.Image.fromarray(detect_im.astype('uint8'), 'RGB')
@@ -64,13 +62,25 @@ class Model:
 		embed_vector = self.CNN(self.preprocessing(img).unsqueeze(0).to(self.device))
 		return embed_vector
 
-	def save_embed_vector(self, list_id, vector=None, id=None, name="Test name", save_path = './Embed_vector.json', img_path="./Face/"):
+	def save_embed_vector(self, list_id, vector=None, id=None, name="Test name", save_path = 'Embed_vector.json', img_path="Face"):
 		#Expect id to be string, example: "0001"
+		if getattr(sys, 'frozen', False):
+			application_path = os.path.dirname(sys.executable)
+		elif __file__:
+			application_path = os.path.dirname(__file__)
+
+		#Save vector and save the attendance status of person
+		save_path = os.path.join(application_path, save_path)
 		f= open(save_path, 'w')
 
 		json.dump(list_id, f)
+
+		#Save vector only
 		if vector!=None:
-			torch.save(vector, "./Embed_Vectors/"+id+"_"+name+'.pt')
+			tensor_file_name = "Embed_Vectors/" + id + "_" + name + ".pt"
+
+			tensor_file_name = os.path.join(application_path, tensor_file_name)
+			torch.save(vector, tensor_file_name)
 
 		f.close()
 		return
