@@ -5,7 +5,7 @@
 ## Thành viên thực hiện: 
 - Trần Nhật Phong - 21521276
 - Lê Tuấn Vũ - 21521679 
-- Bùi Nguyễn Anh Khoa - 20520332
+- Bùi Nguyễn Anh Trung - 20520332
 
 ## Get app to work on PC
 ### Make sure to have python and pip install

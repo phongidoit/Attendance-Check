@@ -1,6 +1,5 @@
 import json
 import sys
-
 import torch
 import os, sys
 from torch.nn import CosineSimilarity

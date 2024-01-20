@@ -172,10 +172,9 @@ class Second(Screen):
     #use clock to schedule the time
     #Got answer from: https://stackoverflow.com/questions/72174380/attribute-error-when-using-kivy-screen-manager-and-self-ids
     def on_enter(self, *args):
-        Clock.schedule_once(self.run_stuff, 0.1)
+        pass
+        #Clock.schedule_once(self.run_stuff, 0.1)
 
-    def run_stuff(self,  dt=0):
-        print("IDs of screen 2: ", self.ids)
 
 class KivyCamera(Image):
 
@@ -332,7 +331,7 @@ class QrtestHome(BoxLayout):
 
         embed_vec = model.create_vector(det_im)
 
-        find_match.list_id.append({"id":new_id, "name":name, "is_here": True})
+        find_match.list_id.append({"id":new_id, "name":name, "is_here": 1})
 
         #Save new vector and is id
         model.save_embed_vector(find_match.list_id, embed_vec, new_id,name )
